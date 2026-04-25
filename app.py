@@ -1,10 +1,11 @@
 import streamlit as st
 import numpy as np
 from PIL import Image
+import tensorflow as tf
 from tensorflow.keras.models import load_model
 
 # Load model
-model = load_model("cnn_model.h5")
+model = load_model("cnn_model.h5", compile=False)
 
 # Class labels (must match training)
 class_names = [
