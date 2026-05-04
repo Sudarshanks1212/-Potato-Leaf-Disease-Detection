@@ -28,13 +28,29 @@ conn.commit()
 
 st.set_page_config(page_title="AgriGuard Pro v4.6", page_icon="🌿", layout="wide")
 
-# Custom Styling
+# FIX: Removed hardcoded #ffffff to allow Theme Switching (Dark/Light)
 st.markdown("""
     <style>
-    .main { background-color: #f8f9fa; }
-    .stMetric { background-color: #ffffff; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-    .about-box { background-color: #e8f5e9; padding: 20px; border-radius: 10px; border-left: 5px solid #2e7d32; }
-    [data-testid="stSidebar"] { background-color: #ffffff; border-right: 1px solid #eee; }
+    /* Metric Card Styling */
+    [data-testid="stMetric"] {
+        padding: 15px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        border: 1px solid rgba(151, 166, 195, 0.2);
+    }
+    
+    /* Sidebar Styling - Set to transparent/inherit to fix Dark Mode issue */
+    [data-testid="stSidebar"] {
+        border-right: 1px solid rgba(151, 166, 195, 0.2);
+    }
+
+    /* About Box Styling */
+    .about-box {
+        padding: 20px;
+        border-radius: 10px;
+        border-left: 5px solid #2e7d32;
+        background-color: rgba(46, 125, 50, 0.1);
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -47,7 +63,6 @@ def save_to_history(disease, confidence):
     conn.commit()
 
 def get_groq_response(prompt_text):
-    """General function for chatbot and diagnostic advice"""
     try:
         completion = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt_text}],
@@ -72,7 +87,7 @@ def create_pdf_report(diagnosis, confidence, roadmap):
     return pdf.output(dest='S').encode('latin-1')
 
 # ==========================================
-# 2. SIDEBAR - PERMANENT AI CHATBOT
+# 2. SIDEBAR - PERMANENT AI CHATBOT (Theme Adaptive)
 # ==========================================
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/628/628283.png", width=70)
@@ -80,18 +95,15 @@ with st.sidebar:
     st.caption("Powered by Groq LPU™")
     st.divider()
 
-    # Chat History Session State
     if "messages" not in st.session_state:
         st.session_state.messages = [
             {"role": "assistant", "content": "Hello! I am your AI Agronomist. Ask me anything about potato diseases or farming."}
         ]
 
-    # Display Chat History
     chat_container = st.container(height=450)
     for msg in st.session_state.messages:
         chat_container.chat_message(msg["role"]).write(msg["content"])
 
-    # Chat Input
     if user_input := st.chat_input("Ask a question..."):
         st.session_state.messages.append({"role": "user", "content": user_input})
         chat_container.chat_message("user").write(user_input)
@@ -141,7 +153,6 @@ with tab_diag:
 
             st.metric("Diagnosis", label, f"{conf:.1f}%")
 
-            # Auto-Report Trigger
             if "last_processed" not in st.session_state or st.session_state.last_processed != label:
                 with st.spinner("🤖 Drafting AI Roadmap..."):
                     advice_prompt = f"The potato leaf has {label} ({conf:.1f}% confidence). Give a short 3-step organic and chemical treatment plan."
@@ -149,8 +160,7 @@ with tab_diag:
                     st.session_state.current_advice = ai_advice
                     st.session_state.last_processed = label
                     save_to_history(label, conf)
-                    # Also add to sidebar chat history automatically
-                    st.session_state.messages.append({"role": "assistant", "content": f"**Auto-Diagnosis Update:** I found **{label}**. Here is your roadmap:\n\n{ai_advice}"})
+                    st.session_state.messages.append({"role": "assistant", "content": f"**Auto-Diagnosis:** Found **{label}**. Treatment plan generated in the dashboard."})
                 st.rerun()
 
             st.info(st.session_state.get('current_advice', 'Generating...'))
@@ -192,9 +202,9 @@ with tab_about:
     st.markdown("<h2 style='color: #1a73e8;'>🤖 About this AI Agent</h2>", unsafe_allow_html=True)
     
     st.markdown("""
-    Welcome to the **AI SQL Data Analyst**, a powerful tool designed to democratize data analysis. 
-    This application allows you to upload any CSV file and ask questions about your data using plain, 
-    natural language. **No SQL or coding experience is required!**
+    Welcome to the **AI Plant Pathologist**, a powerful tool designed to democratize agricultural analysis. 
+    This application allows you to analyze crop health and ask questions about your data using 
+    natural language. **No specialized coding experience is required!**
     """)
 
     col_a, col_b = st.columns(2)
@@ -202,34 +212,31 @@ with tab_about:
     with col_a:
         st.markdown("### ⚙️ How it Works")
         st.info("""
-        1. **Data Ingestion:** Your CSV is securely loaded and converted into a temporary, lightning-fast SQLite database.
-        2. **AI Processing:** Using **LangChain** and the **Groq API (Llama 3)**, your English questions are intelligently translated into complex SQL queries.
-        3. **Execution & Visualization:** The app runs the query, extracts the exact answer, and provides tools to chart the results instantly using **Plotly**.
+        1. **Vision Ingestion:** Your leaf specimen image is converted into pixel-data for our neural network.
+        2. **AI Processing:** Using the **Groq API (Llama 3.3)**, visual results are translated into actionable treatment roadmaps.
+        3. **Execution & Visualization:** The app logs inference results into a local SQLite database and provides tools to track trends.
         """)
 
     with col_b:
         st.markdown("### ✨ Key Features")
         st.success("""
-        - **Natural Language to SQL:** Ask questions like *'What were the top 5 sales in Q3?'*
-        - **Smart Interactive Visualizations:** Auto-detects data types to prevent graph errors.
-        - **Automated Stats:** Instantly view data schemas and statistical summaries.
-        - **Exportable Insights:** Download your custom AI-generated query results as fresh CSV files.
+        - **Natural Language Chat:** Ask the chatbot specific questions about your farming results.
+        - **Smart Interactive Visualizations:** Auto-detects diagnosis patterns over time.
+        - **Automated Stats:** Instantly view scanning frequency and model confidence summaries.
+        - **Exportable Insights:** Download your custom AI-generated reports as professional PDF files.
         """)
 
     st.divider()
     
-    # Technical Architecture Detail
     with st.expander("🛠️ View Technical Stack"):
         st.write("""
-        - **Frontend:** Streamlit (Reactive UI Framework)
-        - **Database Engine:** SQLite (In-memory/Local Storage)
-        - **Orchestration:** LangChain (LLM Chains)
-        - **Inference LPU:** Groq (Llama 3.3 70B model)
-        - **Data Processing:** Pandas & NumPy
-        - **Graphics:** Plotly Express (Interactive Charts)
+        - **Vision Model:** TensorFlow (CNN Model)
+        - **LLM Engine:** Groq (Llama 3.3 70B model)
+        - **Database Engine:** SQLite (Scan Persistence)
+        - **Frontend Framework:** Streamlit
         """)
 
-    st.markdown("<p style='text-align: center; color: grey;'>Built with ❤️ using Streamlit, Pandas, LangChain, Plotly, and Groq.</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: grey;'>Built with ❤️ for Precision Agriculture.</p>", unsafe_allow_html=True)
 
 st.divider()
 st.caption(f"System Version 4.6 | {datetime.datetime.now().strftime('%Y')} Precision Agri Lab")
