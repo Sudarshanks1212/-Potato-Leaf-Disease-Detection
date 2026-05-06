@@ -116,7 +116,7 @@ with st.sidebar:
 # ==========================================
 # 3. MAIN DASHBOARD TABS
 # ==========================================
-st.title("🌿 Potato Leaf Disease Detection and AI Preventation")
+st.title("🌿 Potato Leaf Disease Detection and AI Prevention")
 
 tab_diag, tab_hist, tab_stats, tab_about = st.tabs(["🔍 Diagnosis", "📜 History", "📊 Analytics", "ℹ️ System Info"])
 
